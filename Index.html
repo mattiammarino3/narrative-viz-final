@@ -1,0 +1,363 @@
+<html>
+<script src='https://d3js.org/d3.v5.min.js'></script>
+<script src="https://rawgit.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
+
+<style> rect{fill: lightblue; stroke: black;} div{
+    text-align: center;} </style>
+<body onload="init()" style="background-color: lightgray;">
+<div id="start">
+    <h1>Change in the Modern Day NBA</h1>
+    <h3>A look at how the NBA game has changed from 2013-2018</h3>
+    <h3>Current Metric: <span style="color: blue;">Three Pointers Made</span></h3>
+    <button onclick="secondScene()">Continue to Next Scene</button>
+</div>
+<div id="second" hidden>
+    <h1>Change in the Modern Day NBA</h1>
+    <h3>A look at how the NBA game has changed from 2013-2018</h3>
+    <h3>Current Metric: <span style="color: blue;">Total Points Scored</span></h3>
+    <button onclick="finalScene()">Explore More!</button>
+</div>
+<div id="end" hidden>
+    <div>
+        <h1>Change in the Modern Day NBA</h1>
+        <h3>A look at how the NBA game has changed from 2013-2018</h3>
+        <h3>Time to explore! Change team/metric combinations to further investigate!</h3>
+        <span>
+            <label for="team"> Choose NBA Team: </label>
+            <select id="team" onchange="updateData();">
+                <option value="all" selected>All Teams</option>
+                <option value ="Atlanta Hawks">Atlanta Hawks</option>
+                <option value ="Boston Celtics">Boston Celtics</option>
+                <option value ="Brooklyn Nets">Brooklyn Nets</option>
+                <option value ="Charlotte Hornets">Charlotte Hornets</option>
+                <option value ="Chicago Bulls">Chicago Bulls</option>
+                <option value ="Cleveland Cavaliers">Cleveland Cavaliers</option>
+                <option value ="Dallas Mavericks">Dallas Mavericks</option>
+                <option value ="Denver Nuggets">Denver Nuggets</option>
+                <option value ="Detroit Pistons">Detroit Pistons</option>
+                <option value ="Golden State Warriors">Golden State Warriors</option>
+                <option value ="Houston Rockets">Houston Rockets</option>
+                <option value ="Indiana Pacers">Indiana Pacers</option>
+                <option value ="Los Angeles Clippers">Los Angeles Clippers</option>
+                <option value ="Los Angeles Lakers">Los Angeles Lakers</option>
+                <option value ="Memphis Grizzlies">Memphis Grizzlies</option>
+                <option value ="Miami Heat">Miami Heat</option>
+                <option value ="Milwaukee Bucks">Milwaukee Bucks</option>
+                <option value ="Minnesota Timberwolves">Minnesota Timberwolves</option>
+                <option value ="New Orleans Pelicans">New Orleans Pelicans</option>
+                <option value ="New York Knicks">New York Knicks</option>
+                <option value ="Oklahoma City Thunder">Oklahoma City Thunder</option>
+                <option value ="Orlando Magic">Orlando Magic</option>
+                <option value ="Philadelphia 76ers">Philadelphia 76ers</option>
+                <option value ="Phoenix Suns">Phoenix Suns</option>
+                <option value ="Portland Trail Blazers">Portland Trail Blazers</option>
+                <option value ="Sacramento Kings">Sacramento Kings</option>
+                <option value ="San Antonio Spurs">San Antonio Spurs</option>
+                <option value ="Toronto Raptors">Toronto Raptors</option>
+                <option value ="Utah Jazz">Utah Jazz</option>
+                <option value ="Washington Wizards">Washington Wizards</option>
+            </select>
+        </span>
+    </div>
+    <div style="padding-top: 10px;">
+        <label for="metric"> Choose Metric: </label>
+        <select id="metric" onchange="updateData(this.value);">
+            <option value="ThreePM">Three Pointers Made</option>
+            <option value ="ThreePA">Three Pointers Attempted</option>
+            <option value ="FGM">Field Goals Made</option>
+            <option value ="FGA">Field Goals Attempted</option>
+            <option value ="FTM">Free Throws Made</option>
+            <option value ="FTA">Free Throws Attempted</option>
+            <option value ="OREB">Offensive Rebounds</option>
+            <option value ="DREB">Defensive Rebounds</option>
+            <option value ="PTS" selected>Points</option>
+            <option value ="REB">Total Rebounds</option>
+            <option value ="AST">Assists</option>
+            <option value ="STL">Steals</option>
+            <option value ="BLK">Blocks</option>
+            <option value ="TO">Turnovers</option>
+            <option value ="PF">Personal Fouls</option>
+        </select>
+    </div>
+</div>
+<div id="svg">
+<svg width=900 height=600>
+</svg>
+</div>
+<script>
+async function init() {
+    values = new Array();
+    values.length = 0;
+    var data = d3.csv("NBAData.csv").then(function(data) {
+        yearTotal = 0
+        for (var x = data.length-1; x >-1; x--) {
+            if ((x+1) % 30 == 0 && (x+1) != 180) {
+                values.push(yearTotal/30);
+                yearTotal = 0;
+            }
+            yearTotal = yearTotal + Number(data[x]["ThreePM"]);
+        }
+        values.push(yearTotal/30);
+
+    var max = Math.max.apply(Math, values);
+
+    var x = d3.scaleBand().domain([2013,2014,2015,2016,2017,2018]).range([0,750]).align(0.5)
+    var y = d3.scaleLinear().domain([0,max]).range([400,10])
+
+    d3.select("svg").attr("width",1000)
+    .attr("height",500).append("g").attr("transform","translate("+100+","+50+")").selectAll().data(values)
+    .enter().append("rect")
+    .attr("class", "rec")
+    .attr("x", function(d,i) {return x(getYear(i));} )
+    .attr("y", function(d,i) {return ((max-d)/max)*400} )
+    .attr("width", 700/6)
+    .attr("height", function(d,i) { return (400*d)/max})
+
+    var yAxis = d3.select("svg").append("g").attr("class", "yaxis").attr("transform", "translate("+100+","+50+")")
+    .call(d3.axisLeft(y))
+    .append("text")
+    .attr("class", "t")
+    .attr("fill", "black")//set the fill here
+    .attr("transform","translate("+-50+","+170+")rotate(-90)")
+    .text("Total")
+    .style("font-size", "15px");
+
+    var xAxis = d3.select("svg").append("g").attr("class", "xaxis").attr("transform", "translate("+100+","+450+")")
+    .call(d3.axisBottom(x))
+    .append("text")
+    .attr("fill", "black")//set the fill here
+    .attr("transform","translate("+375+","+50+")")
+    .text("Year")
+    .style("font-size", "15px");
+
+    var percent = parseFloat((values[5]-values[0])/values[0]*100).toFixed(2);
+    
+    const annotations = [
+        {
+            note: {
+            label: "Since 2013, Three Pointers Made have gone up by " + String(percent) + "%",
+            title: "Growth",
+            wrap: 100
+            },
+            connector: {
+            end: "dot",
+            type: "curve",
+            //can also add a curve type, e.g. curve: d3.curveStep
+            points: [[20, -10]]
+            },
+            x: x(2018)+ 700/12,
+            y: ((max-values[5])/max)*400,
+            dy: 0,
+            dx: 100
+        }].map(function(d){ d.color = "#0000FF"; return d})
+
+    const makeAnnotations = d3.annotation()
+        .annotations(annotations)
+
+    
+
+    d3.select("svg")
+    .append("g").attr("transform","translate("+100+","+50+")")
+    .attr("class", "annotation")
+    .call(makeAnnotations)
+
+    });
+
+
+
+}
+
+function secondScene() {
+    team = "all";
+    metric = "PTS";
+    document.getElementById("start").style.display = 'None';
+    document.getElementById("second").style.display = 'Block';
+
+    values = new Array();
+    values.length = 0;
+    var data = d3.csv("NBAData.csv").then(function(data) {
+        if (team == "all") {
+            yearTotal = 0
+            for (var x = data.length-1; x >-1; x--) {
+                if ((x+1) % 30 == 0 && (x+1) != 180) {
+                    values.push(yearTotal/30);
+                    yearTotal = 0;
+                }
+                yearTotal = yearTotal + Number(data[x][metric]);
+            }
+            values.push(yearTotal/30);
+        }
+        else {
+            for (var x = data.length-1; x >-1; x--) {
+                if (data[x].Team == team) {
+                    values.push(Number(data[x][metric]));
+                }
+            }
+
+        }
+    
+    var max = Math.max.apply(Math, values);
+
+    var x = d3.scaleBand().domain([2013,2014,2015,2016,2017,2018]).range([0,750]).align(0.5)
+    var y = d3.scaleLinear().domain([0,max]).range([400,0])
+
+
+    d3.select("svg").selectAll("rect").data(values)
+    .transition()
+    .duration(2000)
+    .attr("x", function(d,i) {return x(getYear(i));} )
+    .attr("y", function(d,i) {return ((max-d)/max)*400} )
+    .attr("width", 700/6)
+    .attr("height", function(d,i) { return (400*d)/max})
+
+    d3.select("svg").selectAll("g.yaxis").transition().duration(2000).call(d3.axisLeft(y))
+
+
+    d3.select("svg").selectAll("g.xaxis").transition().duration(2000).call(d3.axisBottom(x))
+    
+    d3.select("svg").select("g.annotation").remove();
+
+    var percent = parseFloat((values[5]-values[0])/values[0]*100).toFixed(2);
+
+    const annotations = [
+        {
+            note: {
+            label: "Since 2013, Total Points Scored have gone up by " + String(percent) + "%",
+            title: "Growth",
+            wrap: 100
+            },
+            connector: {
+            end: "dot",
+            type: "curve",
+            //can also add a curve type, e.g. curve: d3.curveStep
+            points: [[20, -10]]
+            },
+            x: x(2018)+ 700/12,
+            y: ((max-values[5])/max)*400,
+            dy: 0,
+            dx: 100
+        }].map(function(d){ d.color = "#0000FF"; return d})
+
+    const makeAnnotations = d3.annotation()
+        .annotations(annotations)
+
+    
+
+    d3.select("svg")
+    .append("g").attr("transform","translate("+100+","+50+")")
+    .attr("class", "annotation")
+    .call(makeAnnotations)
+
+    });
+
+}
+
+function finalScene() {
+    document.getElementById("second").style.display = 'None';
+    document.getElementById("end").style.display = 'Block';
+
+}
+function getYear(x){
+    if (x == 0){
+        return 2013;
+    } else if (x == 1){
+        return 2014;
+    } else if (x == 2){
+        return 2015;
+    } else if (x == 3){
+        return 2016;
+    } else if (x == 4){
+        return 2017;
+    } else {
+        return 2018;
+    }
+    
+}
+
+function updateData() {
+    team = document.getElementById("team").value;
+    metric = document.getElementById("metric").value;
+    var temp = document.getElementById('metric');
+    var matricText = temp.options[temp.selectedIndex].innerHTML;
+
+    values = new Array();
+    values.length = 0;
+    var data = d3.csv("NBAData.csv").then(function(data) {
+        if (team == "all") {
+            yearTotal = 0
+            for (var x = data.length-1; x >-1; x--) {
+                if ((x+1) % 30 == 0 && (x+1) != 180) {
+                    values.push(yearTotal/30);
+                    yearTotal = 0;
+                }
+                yearTotal = yearTotal + Number(data[x][metric]);
+            }
+            values.push(yearTotal/30);
+        }
+        else {
+            for (var x = data.length-1; x >-1; x--) {
+                if (data[x].Team == team) {
+                    values.push(Number(data[x][metric]));
+                }
+            }
+
+        }
+    
+    var max = Math.max.apply(Math, values);
+
+    var x = d3.scaleBand().domain([2013,2014,2015,2016,2017,2018]).range([0,750]).align(0.5)
+    var y = d3.scaleLinear().domain([0,max]).range([400,0])
+
+
+    d3.select("svg").selectAll("rect").data(values)
+    .transition()
+    .duration(2000)
+    .attr("x", function(d,i) {return x(getYear(i));} )
+    .attr("y", function(d,i) {return ((max-d)/max)*400} )
+    .attr("width", 700/6)
+    .attr("height", function(d,i) { return (400*d)/max})
+
+    d3.select("svg").selectAll("g.yaxis").transition().duration(2000).call(d3.axisLeft(y))
+
+    d3.select("svg").selectAll("g.xaxis").transition().duration(2000).call(d3.axisBottom(x))
+
+    d3.select("svg").select("g.annotation").remove();
+
+    var percent = parseFloat((values[5]-values[0])/values[0]*100).toFixed(2);
+
+    const annotations = [
+        {
+            note: {
+            label: "Since 2013, "+ matricText+" have changed by " + String(percent) + "%",
+            title: "Growth",
+            wrap: 100
+            },
+            connector: {
+            end: "dot",
+            type: "curve",
+            //can also add a curve type, e.g. curve: d3.curveStep
+            points: [[20, -10]]
+            },
+            x: x(2018)+ 700/12,
+            y: ((max-values[5])/max)*400,
+            dy: 0,
+            dx: 100
+        }].map(function(d){ d.color = "#0000FF"; return d})
+
+    const makeAnnotations = d3.annotation()
+        .annotations(annotations)
+
+    
+
+    d3.select("svg")
+    .append("g").attr("transform","translate("+100+","+50+")")
+    .attr("class", "annotation")
+    .call(makeAnnotations)
+
+
+    });
+}
+
+</script>
+</body>
+</html>
